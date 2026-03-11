@@ -232,6 +232,30 @@ class _CounterPageState extends State<CounterPage> {
                 ),
               ],
             ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                // Show version info in a snackbar
+                final version = _versionService.currentVersion;
+                if (version != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content:
+                          Text('Version: ${version.version} (${version.hash})'),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Version info not available'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+              child: const Text('Show'),
+            ),
             const SizedBox(height: 40),
             if (versionInfo != null)
               Card(
