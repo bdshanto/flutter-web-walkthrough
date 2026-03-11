@@ -16,9 +16,11 @@ class VersionInfo {
 
   factory VersionInfo.fromJson(Map<String, dynamic> json) {
     return VersionInfo(
-      version: json['version'] as String,
-      hash: json['hash'] as String,
-      timestamp: json['timestamp'] as int,
+      version: json['version']?.toString() ?? '1.0.0',
+      hash: json['hash']?.toString() ?? '',
+      timestamp: (json['timestamp'] is int)
+          ? json['timestamp'] as int
+          : int.tryParse(json['timestamp']?.toString() ?? '0') ?? 0,
     );
   }
 
