@@ -1,0 +1,48 @@
+# Text files
+* text=auto
+
+# Shell scripts
+*.sh text eol=lf
+*.bash text eol=lf
+
+# PowerShell scripts
+*.ps1 text eol=crlf
+
+# Source code
+*.dart text diff=dart
+*.yaml text
+*.yml text
+*.json text
+*.md text
+*.html text
+*.css text
+*.js text
+
+# Documentation
+*.markdown text
+*.txt text
+AUTHORS text
+CHANGELOG text
+CHANGES text
+CONTRIBUTING text
+COPYING text
+COPYRIGHT text
+*COPYRIGHT* text
+INSTALL text
+license text
+LICENSE text
+NEWS text
+readme text
+*README* text
+TODO text
+
+# Configuration
+.editorconfig text
+.gitattributes text
+.gitconfig text
+.gitignore text
+.gitmodules text
+
+# Exclude files from exporting
+.gitattributes export-ignore
+.gitignore export-ignore
