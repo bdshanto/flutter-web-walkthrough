@@ -32,7 +32,7 @@ class VersionInfo {
 class VersionService {
   static const String _versionUrl = 'version.json';
   static const String _storageKey = 'cached_version_info';
-  static const Duration _checkInterval = Duration(minutes: 5);
+  static const Duration _checkInterval = Duration(minutes: 1);
 
   Timer? _timer;
   VersionInfo? _currentVersion;
