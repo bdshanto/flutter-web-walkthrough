@@ -5,9 +5,27 @@ param(
     [string]$Version = "1.0.0"
 )
 
+# Ensure we're in the project root directory
+$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
+Set-Location $scriptPath
+
+# Verify we're in a Flutter project
+if (-not (Test-Path "pubspec.yaml")) {
+    Write-Host "Error: pubspec.yaml not found. Please run this script from the project root." -ForegroundColor Red
+    exit 1
+}
+
+# Ensure web directory exists
+if (-not (Test-Path "web")) {
+    Write-Host "Creating web directory..." -ForegroundColor Yellow
+    New-Item -ItemType Directory -Path "web" -Force | Out-Null
+}
+
 Write-Host "=====================================" -ForegroundColor Cyan
 Write-Host "Flutter Web Build with Version Update" -ForegroundColor Cyan
 Write-Host "=====================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Project directory: $scriptPath" -ForegroundColor Gray
 Write-Host ""
 
 # Generate timestamp

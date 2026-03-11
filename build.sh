@@ -5,9 +5,27 @@
 
 VERSION=${1:-"1.0.0"}
 
+# Ensure we're in the project root directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
+
+# Verify we're in a Flutter project
+if [ ! -f "pubspec.yaml" ]; then
+    echo "Error: pubspec.yaml not found. Please run this script from the project root."
+    exit 1
+fi
+
+# Ensure web directory exists
+if [ ! -d "web" ]; then
+    echo "Creating web directory..."
+    mkdir -p web
+fi
+
 echo "====================================="
 echo "Flutter Web Build with Version Update"
 echo "====================================="
+echo ""
+echo "Project directory: $SCRIPT_DIR"
 echo ""
 
 # Generate timestamp (milliseconds since epoch)
