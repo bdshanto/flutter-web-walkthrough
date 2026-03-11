@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 import 'services/version_service.dart';
 
 void main() {
@@ -112,7 +112,7 @@ class _CounterPageState extends State<CounterPage> {
 
     // Clear browser cache and reload
     await Future.delayed(const Duration(milliseconds: 500));
-    html.window.location.reload();
+    web.window.location.reload();
   }
 
   void _postponeUpdate() {
