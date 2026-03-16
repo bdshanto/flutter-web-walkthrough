@@ -17,6 +17,12 @@ class _LoginPageState extends State<LoginPage> {
   bool _checkingVersion = true;
   String? _error;
 
+  void _reloadWithCacheBust() {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final basePath = web.window.location.pathname;
+    web.window.location.replace('$basePath?v=$timestamp');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -42,7 +48,7 @@ class _LoginPageState extends State<LoginPage> {
 
       if (hasUpdate && mounted) {
         await _versionService.applyUpdate();
-        web.window.location.reload();
+        _reloadWithCacheBust();
         return;
       }
     } catch (_) {

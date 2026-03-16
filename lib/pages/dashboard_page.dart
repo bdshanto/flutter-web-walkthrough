@@ -14,6 +14,12 @@ class _DashboardPageState extends State<DashboardPage> {
   final VersionService _versionService = VersionService();
   bool _updateAvailable = false;
 
+  void _reloadWithCacheBust() {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final basePath = web.window.location.pathname;
+    web.window.location.replace('$basePath?v=$timestamp');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -83,7 +89,7 @@ class _DashboardPageState extends State<DashboardPage> {
     }
 
     await Future.delayed(const Duration(milliseconds: 500));
-    web.window.location.reload();
+    _reloadWithCacheBust();
   }
 
   void _postponeUpdate() {
