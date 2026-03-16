@@ -20,6 +20,8 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
+
+    // use API to check version on page load; if changed, reload immediately
     _checkVersionOnLoad();
   }
 
