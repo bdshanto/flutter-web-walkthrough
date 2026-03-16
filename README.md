@@ -1,201 +1,192 @@
 # Flutter Web Walkthrough
 
-A Flutter web application demonstrating automatic version checking and cache clearing functionality with a simple counter demo page.
+A Flutter Web demo app for **version-based update detection** with a simple 3-page flow:
+
+- Landing page
+- Login page
+- Dashboard page (counter + update prompts)
 
 ## Features
 
-- 🔄 **Automatic Version Detection**: Periodically checks for new versions deployed on the server
-- 🔔 **Update Notifications**: Alerts users when a new version is available
-- 🧹 **Cache Clearing**: Automatically clears old caches when updating
-- ⏰ **Postpone Option**: Users can choose to update now or postpone
-- 📊 **Counter Demo**: Simple increment/decrement counter functionality
-- 📱 **Responsive Design**: Works on desktop and mobile browsers
+- Detects deployment changes via `web/version.json`
+- Compares server hash with cached hash in local storage
+- Checks for updates every **1 minute**
+- Prompts user to update (`Update Now` / `Not Now`)
+- Reloads page with cache-busting query when update is accepted
+- Simple login flow and dashboard counter demo
 
-## How It Works
+## Core Business Logic
 
-1. **Version Tracking**: The app uses a `version.json` file to track version information:
-   ```json
-   {
-     "version": "1.0.0",
-     "hash": "1.0.0-1741651200000",
-     "timestamp": 1741651200000
-   }
-   ```
+This project’s core business goal is **safe client update orchestration for Flutter Web**.
 
-2. **Build Process**: When building the app, the build script automatically:
-   - Generates a new hash and timestamp
-   - Updates `version.json` with the new values
-   - Builds the Flutter web app
-   - Copies the version file to the build output
+### Business Problem
 
-3. **Version Checking**: The app periodically (every 5 minutes):
-   - Fetches `version.json` from the server
-   - Compares the hash with the cached version
-   - Notifies the user if a new version is detected
+When a new web build is deployed, users may still run old JS/assets in browser cache. This can cause:
 
-4. **Update Flow**:
-   - **User accepts update**: The app reloads and clears all caches
-   - **User postpones**: A notification is shown, and the check will happen again in the next interval
+- stale UI and behavior,
+- mismatch between frontend and backend expectations,
+- support issues from mixed app versions.
+
+### Business Rules (Must Keep)
+
+1. **Single source of version truth** is `version.json` at app root.
+2. App compares **server hash** vs **cached hash** (not only semantic version string).
+3. If hash changed:
+  - on login page: reload immediately with cache-busting query,
+  - on dashboard: show update prompt (`Update Now` / `Not Now`).
+4. Accepting update clears cached version state and reloads app.
+5. Build process must always regenerate `version`, `hash`, and `timestamp`.
+
+### Operational Flow
+
+1. Build script generates new `hash` and `timestamp`.
+2. Server serves updated assets + updated `version.json`.
+3. Client polling detects hash change.
+4. UI triggers update UX.
+5. Client reloads with query suffix (cache bust) and starts on latest bundle.
+
+### If You Copy This to Another Repository
+
+Keep these parts together:
+
+- Routing flow in `main.dart` (`/`, `/login`, `/dashboard`)
+- `VersionService` (`lib/services/version_service.dart`)
+- Update UX in `login_page.dart` and `dashboard_page.dart`
+- Build scripts that update `web/version.json` before build
+- Deployment rule that serves `version.json` at web root with no stale caching
+
+If any one of these is skipped, update detection can silently fail.
+
+### Do / Don't (For Copying or Updating)
+
+| Do | Don't |
+|---|---|
+| Keep `version.json` at the web root in deployed output. | Don't move `version.json` to another folder without updating `VersionService` URL logic. |
+| Regenerate `hash` and `timestamp` on every release build. | Don't reuse old hash values across deployments. |
+| Compare hashes to detect updates. | Don't rely only on semantic version labels for change detection. |
+| Keep login + dashboard update flows aligned with service behavior. | Don't remove update handling from one page and keep it only on another without intent. |
+| Use cache-busting reload when applying updates. | Don't use plain reload in cases where stale cached assets can persist. |
+| Ensure IIS/server serves latest `version.json` (no stale cache). | Don't configure long-term caching for `version.json`. |
+| Keep build scripts and runtime logic in sync. | Don't modify build output structure without checking runtime fetch path assumptions. |
+| Test one full release cycle locally before production deploy. | Don't deploy update logic changes without verifying prompt/reload behavior end-to-end. |
+
+## Current Route Flow
+
+- `/` → `LandingPage`
+- `/login` → `LoginPage`
+- `/dashboard` → `DashboardPage`
+
+`LoginPage` also performs an immediate version check on load and refreshes if a new version is detected.
+
+## Version File Format
+
+The app reads `version.json` from the app root:
+
+```json
+{
+  "version": "1.0.5",
+  "hash": "1.0.5-1773226631645",
+  "timestamp": 1773226631645
+}
+```
 
 ## Prerequisites
 
-- Flutter SDK (latest stable version)
-- Dart SDK (included with Flutter)
-- Git
+- Flutter SDK (stable)
+- Dart SDK (bundled with Flutter)
+- Chrome (for local web run)
 
-## Getting Started
-
-### 1. Clone the Repository
-
-```bash
-git clone <repository-url>
-cd flutter-web-walkthrough
-```
-
-### 2. Install Dependencies
+## Run Locally
 
 ```bash
 flutter pub get
-```
-
-### 3. Run in Development Mode
-
-```bash
 flutter run -d chrome
 ```
 
-## Building for Production
+## Build for Web
 
 ### Windows
-
-Use the PowerShell build script:
 
 ```powershell
 .\build.ps1 -Version "1.0.0"
 ```
 
-### Linux/Mac
-
-Use the bash build script:
+### Linux / macOS
 
 ```bash
 chmod +x build.sh
 ./build.sh 1.0.0
 ```
 
-The build script will:
-1. Generate a new version hash and timestamp
-2. Update `web/version.json`
-3. Clean previous builds
-4. Get dependencies
-5. Build the Flutter web app
-6. Copy version.json to the build output
+Build output is generated in `build/web/`.
 
-The final build will be in the `build/web/` directory.
+## What the Build Script Does
 
-## Deployment
+1. Generates a new timestamp
+2. Creates `hash = <version>-<timestamp>`
+3. Writes `web/version.json`
+4. Runs Flutter web build
+5. Copies `version.json` into `build/web/version.json`
+6. Copies IIS config (`web.config` or minimal fallback when configured)
 
-1. Build the app using the build script:
-   ```powershell
-   .\build.ps1 -Version "1.1.0"
-   ```
+## IIS Deployment (Current Setup)
 
-2. Deploy the contents of `build/web/` to your web server
+If deploying to IIS (example used in this repo setup):
 
-3. The `version.json` file should be accessible at the root of your deployment (e.g., `https://yourdomain.com/version.json`)
+- Site name: `flutter-web`
+- App pool: `flutter-web`
+- URL: `http://localhost:91`
 
-4. Users with the old version will be notified of the update automatically
+Typical deployment flow:
+
+```powershell
+.\build.ps1 -Version "1.0.0"
+# copy build/web/* to IIS physical path
+```
 
 ## Project Structure
 
-```
+```text
 flutter-web-walkthrough/
 ├── lib/
-│   ├── main.dart                    # Main app and counter page
+│   ├── main.dart
+│   ├── pages/
+│   │   ├── landing_page.dart
+│   │   ├── login_page.dart
+│   │   └── dashboard_page.dart
 │   └── services/
-│       └── version_service.dart     # Version checking service
+│       └── version_service.dart
 ├── web/
-│   ├── index.html                   # HTML entry point
-│   ├── manifest.json                # Web app manifest
-│   └── version.json                 # Version tracking file
-├── docs/
-│   └── logics.md                    # Project documentation
-├── build.ps1                        # Windows build script
-├── build.sh                         # Linux/Mac build script
-├── pubspec.yaml                     # Flutter dependencies
-├── .gitignore                       # Git ignore rules
-└── .gitattributes                   # Git attributes
+│   ├── index.html
+│   ├── manifest.json
+│   ├── version.json
+│   ├── web.config
+│   └── web.config.minimal
+├── build.ps1
+├── build.sh
+├── deploy-iis.ps1
+├── fix-iis-500.ps1
+└── pubspec.yaml
 ```
 
-## Configuration
+## Configuration Notes
 
-### Adjust Version Check Interval
-
-Edit `lib/services/version_service.dart`:
+- Version check interval is in `VersionService`:
 
 ```dart
-static const Duration _checkInterval = Duration(minutes: 5);  // Change this value
+static const Duration _checkInterval = Duration(minutes: 1);
 ```
 
-### Customize Update Dialog
-
-Modify the `_showUpdateDialog()` method in `lib/main.dart` to customize the appearance and behavior of the update notification.
-
-## Technologies Used
-
-- **Flutter**: Cross-platform UI framework
-- **Dart**: Programming language
-- **http**: HTTP client for fetching version info
-- **shared_preferences**: Local storage for caching version data
-- **Git**: Version control
-
-## Development Notes
-
-### Version Number Format
-
-We recommend using semantic versioning (e.g., `1.0.0`, `1.1.0`, `2.0.0`).
-
-### Testing Version Updates Locally
-
-1. Build the app with version 1.0.0:
-   ```powershell
-   .\build.ps1 -Version "1.0.0"
-   ```
-
-2. Serve the build locally (e.g., using Python HTTP server):
-   ```bash
-   cd build/web
-   python -m http.server 8000
-   ```
-
-3. Open the app in a browser
-
-4. Build a new version:
-   ```powershell
-   .\build.ps1 -Version "1.1.0"
-   ```
-
-5. Replace the files on the server
-
-6. Wait 5 minutes or trigger a manual check - you should see the update notification
+- Update prompt behavior is implemented in:
+  - `lib/pages/login_page.dart`
+  - `lib/pages/dashboard_page.dart`
 
 ## Troubleshooting
 
-### Update notification not showing
+- **Blank page on web**: ensure `web/index.html` uses `flutter_bootstrap.js`
+- **Version parse errors**: validate `web/version.json` fields (`version`, `hash`, `timestamp`)
+- **No update prompt**: ensure deployed `version.json` hash changes between releases
 
-- Check that `version.json` is accessible at the root URL
-- Verify the version check interval hasn't been increased too much
-- Check browser console for any errors
+## Docs
 
-### Cache not clearing
-
-- Ensure the browser supports the Service Worker API
-- Check that the reload function is being called correctly
-
-## License
-
-This project is open source and available under the MIT License.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+- Product logic notes: `docs/logics.md`
